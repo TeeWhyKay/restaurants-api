@@ -1,6 +1,6 @@
 class Api::V1::RestaurantsController < Api::V1::BaseController
   acts_as_token_authentication_handler_for User, except: [ :index, :show ]
-  before_action :set_restaurant, only: [:show, :update]
+  before_action :set_restaurant, only: [:show, :update, :destroy]
   def index
     @restaurants = policy_scope(Restaurant)
   end
@@ -16,6 +16,22 @@ class Api::V1::RestaurantsController < Api::V1::BaseController
     end
   end
 
+  def create
+    @restaurant = Restaurant.new(restaurant_params)
+    @restaurant.user = current_user
+    authorize @restaurant
+    if @restaurant.save
+      render :show, status: :created # HTTP 401
+    else
+      render_error
+    end
+  end
+
+  def destroy
+    @restaurant.destroy
+    head :no_content
+  end
+
   private
 
   def set_restaurant
@@ -28,6 +44,6 @@ class Api::V1::RestaurantsController < Api::V1::BaseController
   end
 
   def render_error
-    render json: { errors: @restaurant.errors.full_messages }, status: :unprocessable_entity
+    render json: { errors: @restaurant.errors.full_messages }, status: :unprocessable_entity # HTTP 422
   end
 end
